@@ -22,3 +22,11 @@ class Product(Base):
     name = Column(String(80))
     description = Column(String(300))
     price = Column(Float)
+    quantity = Column(Integer)
+
+class Movimentacao(Base):
+    __tablename__ = "movimentacoes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    amount = Column(Integer)
+    product_id = Column(Integer, ForeignKey("products.id"))

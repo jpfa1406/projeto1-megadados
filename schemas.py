@@ -5,6 +5,7 @@ class ProductBase(BaseModel):
     name: str
     description: Union[str, None] = None
     price: float
+    quantity: int
 
 class ProductCreate(ProductBase):
     pass
@@ -18,6 +19,20 @@ class Product(ProductBase):
             "example": {
                 "name": "nova_string",
                 "description": "nova_string",
-                "price": 6.29
+                "price": 6.29,
+                "quantity": 3
             }
         }
+
+class MovimentacaoBase(BaseModel):
+    amount: int
+    product_id: int
+
+class MovimentacaoCreate(MovimentacaoBase):
+    pass
+
+class Movimentacao(MovimentacaoBase):
+    id: int
+
+    class Config:
+        orm_mode = True

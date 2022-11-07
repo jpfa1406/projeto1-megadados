@@ -70,3 +70,41 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Item not found")
 
 
+@app.post("/movimentacoes", status_code=201, tags=["Movimentacoes"])
+def create_movimentacao(movimentacao: schemas.MovimentacaoCreate, db: Session = Depends(get_db)):
+    """
+    Create a movimentacao with all the information:
+
+    - **id**: unique id is auto generated
+    - **amount**: quantidade movimentada
+    - **product_id**: what product is related to
+    """
+    db_product = crud.get_product(db, movimentacao.product_id)
+    if db_product is None:
+        raise HTTPException(status_code=404, detail="Item non exintent")
+    db_product.quantity += movimentacao.amount
+    crud.update_product(db, db_product, movimentacao.product_id)
+    return crud.create_movimentacao(db=db, movimentacao=movimentacao)
+
+@app.get("/movimentacoes", response_model=list[schemas.Movimentacao], tags=["Movimentacoes"], summary="Get all movimentacoes")
+def get_movimentacoes(db: Session = Depends(get_db), skip: int = 0, limit: int = 10):
+    movimentacoes = crud.get_movimentacoes(db, skip=skip, limit=limit)
+    return movimentacoes
+
+@app.get("/movimentacoes/{movimentacao_id}", response_model=schemas.Movimentacao, tags=["Movimentacoes"], summary="Get a specific movimentacao")
+def get_product(movimentacao_id: int, db: Session = Depends(get_db)):
+    db_mov = crud.get_movimentacao(db, movimentacao_id=movimentacao_id)
+    if db_mov is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return db_mov
+
+@app.get("/products/{product_id}/movimentacoes", response_model=list[schemas.Movimentacao], tags=["Products"], summary="Get a all movimentacoes of a product")
+def get_mov_product(product_id: int, db: Session = Depends(get_db)):
+    db_mov_prod = crud.get_product(db, product_id=product_id)
+    if db_mov_prod is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return crud.get_mov_product(db, product_id=product_id)
+        
+
+
+
