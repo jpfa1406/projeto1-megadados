@@ -1,16 +1,24 @@
-from typing import Union
-from pydantic import BaseModel
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float
+from sqlalchemy.orm import relationship
 
-class Product(BaseModel):
-    name: str
-    description: Union[str, None] = None
-    price: float
+from .database import Base
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "name": "Bis",
-                "description": "Chocolate nestle bis branco laka 2kg",
-                "price": 6.29
-            }
-        }
+
+#class User(Base):
+#    __tablename__ = "products"
+#
+#    id = Column(Integer, primary_key=True, index=True)
+#    email = Column(String, unique=True, index=True)
+#    hashed_password = Column(String)
+#    is_active = Column(Boolean, default=True)
+#
+#    items = relationship("Item", back_populates="owner")
+
+
+class Product(Base):
+    __tablename__ = "products"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(80))
+    description = Column(String(300))
+    price = Column(Float)

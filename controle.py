@@ -1,13 +1,25 @@
-from fastapi import Body, FastAPI, HTTPException
-from models import Product
-from typing import List
+from fastapi import Body, Depends, FastAPI, HTTPException
+from sqlalchemy.orm import Session
 
-banco: List[Product] = []
+from . import crud, models, schemas
+from .database import SessionLocal, engine
+
+models.Base.metadata.create_all(bind=engine)
+
+#banco: List[Product] = []asyn
  
 app = FastAPI()
 
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 @app.post("/products", status_code=201, tags=["Products"], summary="Creat a product")
-async def create_product(product: Product):
+def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)):
     """
     Create an product with all the information:
 
@@ -16,31 +28,23 @@ async def create_product(product: Product):
     - **description**: optional, description of the product
     - **price**: required
     """
-    banco.append(product)
-    return product
+    return crud.create_product(db=db, product=product)
 
-@app.get("/products", tags=["Products"], summary="Get all products")
-async def get_products():
-    return banco
+@app.get("/products", response_model=list[schemas.Product], tags=["Products"], summary="Get all products")
+def get_products(db: Session = Depends(get_db), skip: int = 0, limit: int = 10):
+    products = crud.get_products(db, skip=skip, limit=limit)
+    return products
 
 
-@app.get("/products/{product_id}", tags=["Products"], summary="Get a specific product")
-async def get_product(product_id: int):
-    if product_id > len(banco):
+@app.get("/products/{product_id}", response_model=schemas.Product, tags=["Products"], summary="Get a specific product")
+def get_product(product_id: int, db: Session = Depends(get_db)):
+    db_product = crud.get_product(db, product_id=product_id)
+    if db_product is None:
         raise HTTPException(status_code=404, detail="Item not found")
-    return banco[product_id]
+    return db_product
 
-@app.put("/products/{product_id}", tags=["Products"], summary="Update a product")
-async def update_product(
-    product_id: int,
-    product: Product = Body(
-        example={
-            "name": "Bis",
-            "description": "Chocolate bis branco laka 126g",
-            "price": 6.50
-        },
-    ),
-):
+@app.put("/products/{product_id}", response_model=schemas.ProductCreate, tags=["Products"], summary="Update a product")
+def update_product(product_id: int, product: schemas.ProductCreate, db: Session = Depends(get_db)):
     """
     Update a product information:
 
@@ -48,15 +52,21 @@ async def update_product(
     - **name**: each item must have a name
     - **description**: optional, description of the product
     - **price**: required
+
     """
+    db_product = crud.get_product(db, product_id)
+    if db_product:
+        crud.update_product(db, product, product_id)
+    else:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return product
 
-    if product_id > len(banco):
-        raise HTTPException(status_code=404, detail="Product id not found")
+@app.delete("/products/{product_id}", tags=["Products"], summary="Delete a product")
+def delete_product(product_id: int, db: Session = Depends(get_db)):
+    db_product = crud.get_product(db, product_id)
+    if db_product:
+        crud.delete_product(db, product_id)
+    else:
+        raise HTTPException(status_code=404, detail="Item not found")
 
-    old_prod = banco[product_id]
 
-    old_prod.name = product.name
-    old_prod.description = product.description
-    old_prod.price = product.price
-
-    return old_prod
